@@ -10,6 +10,7 @@ import (
 	"crypto/dsa"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/md5"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/asn1"
@@ -200,6 +201,10 @@ type PublicKey interface {
 	// Verify that sig is a signature on the given data using this
 	// key. This function will hash the data appropriately first.
 	Verify(data []byte, sig *Signature) error
+
+	// Fingerprint returns the user presentation of the key's
+	// fingerprint as described by RFC 4716 section 4.
+	Fingerprint() string
 }
 
 // A Signer can create signatures that verify against a public key.
@@ -216,6 +221,10 @@ type rsaPublicKey rsa.PublicKey
 
 func (r *rsaPublicKey) Type() string {
 	return "ssh-rsa"
+}
+func (r *rsaPublicKey) Fingerprint() string {
+	md5sum := md5.Sum(r.Marshal())
+	return rfc4716hex(md5sum[:])
 }
 
 // parseRSA parses an RSA key according to RFC 4253, section 6.6.
@@ -271,6 +280,11 @@ type dsaPublicKey dsa.PublicKey
 
 func (r *dsaPublicKey) Type() string {
 	return "ssh-dss"
+}
+
+func (r *dsaPublicKey) Fingerprint() string {
+	md5sum := md5.Sum(r.Marshal())
+	return rfc4716hex(md5sum[:])
 }
 
 // parseDSA parses an DSA key according to RFC 4253, section 6.6.
@@ -379,6 +393,11 @@ func (key *ecdsaPublicKey) nistID() string {
 		return "nistp521"
 	}
 	panic("ssh: unsupported ecdsa key size")
+}
+
+func (r *ecdsaPublicKey) Fingerprint() string {
+	md5sum := md5.Sum(r.Marshal())
+	return rfc4716hex(md5sum[:])
 }
 
 func supportedEllipticCurve(curve elliptic.Curve) bool {
@@ -643,4 +662,15 @@ func ParseDSAPrivateKey(der []byte) (*dsa.PrivateKey, error) {
 		},
 		X: k.Pub,
 	}, nil
+}
+
+func rfc4716hex(data []byte) string {
+	var fingerprint string
+	for i := 0; i < len(data); i++ {
+		fingerprint = fmt.Sprintf("%s%0.2x", fingerprint, data[i])
+		if i != len(data)-1 {
+			fingerprint = fingerprint + ":"
+		}
+	}
+	return fingerprint
 }

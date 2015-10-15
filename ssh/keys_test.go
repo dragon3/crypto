@@ -304,3 +304,15 @@ func TestInvalidEntry(t *testing.T) {
 		t.Errorf("got valid entry for %q", authInvalid)
 	}
 }
+
+func TestFingerprint(t *testing.T) {
+	dsa := testPublicKeys["dsa"]
+	if dsa.Fingerprint() != "c9:67:63:e7:b5:34:5c:72:e3:7d:41:1b:cc:cd:89:28" {
+		t.Errorf("got invalid fingerprint %s", dsa.Fingerprint())
+	}
+
+	rsa := testPublicKeys["rsa"]
+	if rsa.Fingerprint() != "5c:00:08:96:4e:02:63:6c:ab:15:1c:b6:ea:6c:59:37" {
+		t.Errorf("got invalid fingerprint %s", rsa.Fingerprint())
+	}
+}

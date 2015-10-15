@@ -6,6 +6,7 @@ package ssh
 
 import (
 	"bytes"
+	"crypto/md5"
 	"errors"
 	"fmt"
 	"io"
@@ -468,6 +469,13 @@ func (c *Certificate) Type() string {
 // key. It is part of the PublicKey interface.
 func (c *Certificate) Verify(data []byte, sig *Signature) error {
 	return c.Key.Verify(data, sig)
+}
+
+// Fingerprint returns the key's fingerprint. It is part of the
+// PublicKey interface.
+func (c *Certificate) Fingerprint() string {
+	md5sum := md5.Sum(c.Key.Marshal())
+	return rfc4716hex(md5sum[:])
 }
 
 func parseSignatureBody(in []byte) (out *Signature, rest []byte, ok bool) {
